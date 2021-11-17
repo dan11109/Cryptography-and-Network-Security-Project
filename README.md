@@ -1,6 +1,6 @@
 # Cryptography-and-Network-Security-Project
 
-Project for encrypted banking trasactoins using RSA and triple DES. 
+Project for encrypted banking trasactions using RSA and triple DES. 
 
 Group Members:
 - Will Hawkins (hawkiw2@rpi.edu)
