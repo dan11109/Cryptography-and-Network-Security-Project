@@ -1,5 +1,6 @@
 from DES import DES
 from bitarray import bitarray
+import random
 
 def tripleDES(key, toEncrypt, encrypt):
     """
@@ -13,23 +14,152 @@ def tripleDES(key, toEncrypt, encrypt):
     assert(len(k1) == len(k3))
     assert(len(k1) == 64)
     if encrypt:
-        ciphertext = DES(k3, DES(k2, DES(k1, toEncrypt, True), False), True)
-        return ciphertext
-    if not encrypt:
-        plaintext = DES(k1, DES(k2, DES(k3, toEncrypt, False), True), False)
-        return plaintext
+        cipherText = DES(k3, DES(k2, DES(k1, toEncrypt, True), False), True)
+        return cipherText
+    else: # decrypt
+        plainText = DES(k1, DES(k2, DES(k3, toEncrypt, False), True), False)
+        return plainText
+def _tripleDESCBCEncrypt(message, key):
+    """
+    message: len N%64==0 bitarray (padded encoded plainText)
+    key: length 192 bitarray
+    returns: length N >= 8*len(message) bitarray
+    encrypts message w key using tDES in CBC mode
+    """
+    assert(len(message)%64==0)
+    assert(len(key) == 192)
+    # use an initialization vector of all zeros cus uhh
+    IV = bitarray("0"*64)
+    # divide the message bitarray into 64 bit chunks
+    unencryptedChunks = []
+    left = 0
+    right = 64
+    while right < len(message)+1:
+        unencryptedChunks.append(message[left:right])
+        left = left + 64
+        right = right + 64
+    # sanity check
+    assert(len(unencryptedChunks) == len(message)/64)
+    for chunk in unencryptedChunks:
+        assert(len(chunk) == 64)
+
+    # encrypt
+    encryptedChunks = []
+    XORVec = IV
+    for i in range(len(unencryptedChunks)):
+        chunk = unencryptedChunks[i]
+        encryptedChunks.append(tripleDES(key, XORVec ^ chunk, True))
+        XORVec = encryptedChunks[i]
+    ret = bitarray()
+    for chunk in encryptedChunks:
+        ret = ret + chunk
+    return ret 
+
+def _tripleDESCBCDecrypt(cipherText, key):
+    """
+    cipherText: len N%64==0 bitarray (padded encoded plainText)
+    key: length 192 bitarray
+    returns: length N >= 8*len(message) bitarray
+    decrypts message w key using tDES in CBC mode
+    """
+    assert(len(key) == 192)
+    assert(len(cipherText) % 64 == 0)
+    # use an initialization vector of all zeros cus uhh
+    IV = bitarray("0"*64)
+    # divide the cipherText bitarray into 64 bit chunks
+    encryptedChunks = []
+    left = 0
+    right = 64
+    while right < len(cipherText)+1:
+        encryptedChunks.append(cipherText[left:right])
+        left = left + 64
+        right = right + 64
+
+    # sanity check
+    assert(len(encryptedChunks) == len(cipherText)/64)
+    for chunk in encryptedChunks:
+        assert(len(chunk) == 64)
+
+    # decrypt
+    unencryptedChunks = []
+    XORVec = IV
+    for i in range(len(encryptedChunks)):
+        chunk = encryptedChunks[i]
+        unencryptedChunks.append(XORVec ^ tripleDES(key, chunk, False))
+        XORVec = encryptedChunks[i]
+
+    ret = bitarray()
+    for chunk in unencryptedChunks:
+        ret = ret + chunk
+    return ret
+
+def tripleDESCBCEncrypt(message, key):
+    """
+    message: arbitrary length string to encrypt
+    key: length 192 string of 1s and 0s 
+    returns: length N >= 8*len(message) string of 1s and zeros
+    (we pad the message to the nearest 64 bits using whitespace- the cipherText might be a bit longer)
+    """
+    key = bitarray(key)
+    assert(len(key) == 192)
+    # pad string to the nearest 64 bits by adding whitespace bytes
+    while (len(message)*8) % 64 != 0:
+        message = message + " "
+
+    # sanitize?
+    assert(len(message)%8==0)
+    assert(len(message)> 0)
+    # convert string to bitarray
+    messageBits = bitarray()
+    messageBits.frombytes(message.encode("utf-8"))
+    assert(len(messageBits)%64 == 0)
+    res = _tripleDESCBCEncrypt(messageBits, key)
+    return res.to01()
+
+def tripleDESCBCDecrypt(cipherText, key):
+    """
+    cipherText: string of 1s and 0s w. len%8==0
+    key: length 192 string of 1s and 0s 
+    returns: length k < N string representing the plainText
+    (whitespace stripped from the resulting plainText)
+    """
+    cipherText = bitarray(cipherText)
+    key = bitarray(key)
+    # convert bitarray to bytes and decode to utf-8
+    ret = _tripleDESCBCDecrypt(cipherText, key).tobytes().decode("utf-8")
+    # strip our whitespace padding
+    return ret.rstrip()
 
 
-if __name__ == '__main__':
-    # example usage
+def singleTripleDESExample():
+    # example usage of single tripleDES
+    print("Single triple DES:")
     key = bitarray("0"*192)
     toEncrypt = bitarray("0"*64)
-    ciphertext = tripleDES(key, toEncrypt, encrypt = True)
+    cipherText = tripleDES(key, toEncrypt, encrypt = True)
     print("Encrypting")
     print(toEncrypt)
     print("Got:")
-    print(ciphertext)
+    print(cipherText)
     print("Decrypting")
-    plaintext = tripleDES(key, ciphertext, encrypt = False)
+    plainText = tripleDES(key, cipherText, encrypt = False)
     print("Got:")
-    print(plaintext)
+    print(plainText)
+
+if __name__ == '__main__':
+    # single triple DES example
+    # singleTripleDESExample()
+
+    # example usage of CBC tripleDES (use this)
+    print("CBC triple DES:")
+    # generate a random key
+    key = "".join(random.choices(["0", "1"], k=192))
+    toEncrypt = "plaintext of arbitrary length1234"
+    print("Encrypting:\n{}\nusing a random key:\n{}".format(toEncrypt, key))
+    cipherText = tripleDESCBCEncrypt(toEncrypt, key)
+    print("Found ciphertext:")
+    print(cipherText)
+    print("Decrypting")
+    plainText = tripleDESCBCDecrypt(cipherText, key)
+    print("Found plaintext:")
+    print(plainText)
