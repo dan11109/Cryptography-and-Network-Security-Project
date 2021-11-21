@@ -3,6 +3,11 @@
 
 # Generates p,q,e,and d for RSA given length of primes
 # Some of Code from for generating large primes: https://www.geeksforgeeks.org/how-to-generate-large-prime-numbers-for-rsa-algorithm/
+'''
+call RSA_params(n) with n being the length of p and q generated and it will return (p,q,e,d). You can then calculate N = pq. 
+'''
+
+
 import random
  
 # Pre generated primes
