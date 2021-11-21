@@ -10,6 +10,10 @@ Group Members:
 
 Overview: 
 
+-1. Bank Establishes Communication Channel
+
+0. Client connects to channel.
+
 1. Client: generate p,q,e,d using RSA and send {e,N} to Bank. 
 
 2. Bank: Receive {e,N}, send {CDES,Chmac} where CDES = KDES^e mod N and CHMAC = KHMAC^e mod N
