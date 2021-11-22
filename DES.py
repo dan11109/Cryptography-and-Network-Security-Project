@@ -109,7 +109,7 @@ def permute(toPermute, permutationTable):
 
 def circularLeftShift(inputBits, n):
     save = inputBits[0:n]
-    return (inputBits << 2) + save
+    return (inputBits << n) + save
 
 def parityDrop(key):
     """
