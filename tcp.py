@@ -111,6 +111,7 @@ if __name__ == '__main__':
             encryptedSend(conn, f"Hello {decryptedUsername}, you are logged in!", DES_key)
         else:
             encryptedSend(conn, "Incorrect password! Terminating connection!", DES_key)
+            exit(0)
 
         threadingStuff(conn, BUFFSIZE, decryptedUsername, bankfile, DES_key)
 
