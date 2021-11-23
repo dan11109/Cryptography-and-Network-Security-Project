@@ -1,4 +1,6 @@
 #Bank Side
+import bitarray
+import bitarray.util
 import pickle
 import threading
 import socket
@@ -8,6 +10,7 @@ import DES
 import sys
 import RSA
 import bank
+from MAC import *
 kill = False
 #Use this to choose a new secret port
 
@@ -25,16 +28,25 @@ def receive(socket,n):
 def send(socket, data):
     msg = pickle.dumps(data)
     socket.sendall(msg)
-
 def encryptedSend(socket, data, key):
-    msg = tripleDES.tripleDESCBCEncryptAny(data, key)
+    # pass data through hmac
+    # send DES[(data, hash)]
+    mac = hmac_fn(str(data), int(key, 2))
+    payload = (data, mac)
+    msg = tripleDES.tripleDESCBCEncryptAny(payload, key)
+
     msg = pickle.dumps(msg)
     socket.sendall(msg)
 
 def encryptedReceive(socket, n, key):
     data = socket.recv(n)
-    data = pickle.loads(data)
-    return tripleDES.tripleDESCBCDecryptAny(data, key)
+    data = pickle.loads(data) 
+    data, mac = tripleDES.tripleDESCBCDecryptAny(data, key)
+
+    if vrfy(str(data), mac, int(key, 2)):
+        return data
+    else:
+        assert(False)
 
 def receiveAsync(socket, n, username, bankfile, DES_key):
     while not kill:

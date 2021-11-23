@@ -9,7 +9,7 @@ import pickle
 import RSA
 import tripleDES
 import sys
-
+from MAC import *
 BANK = sys.argv[1]
 PORT = int(sys.argv[2])
 
@@ -27,15 +27,26 @@ def send(socket, data):
     socket.sendall(msg)
 
 def encryptedSend(socket, data, key):
-    msg = tripleDES.tripleDESCBCEncryptAny(data, key)
+    # pass data through hmac to get hash
+    # send DES[(data, hash)]
+    mac = hmac_fn(str(data), int(key.to01(), 2))
+    payload = (data, mac)
 
+    msg = tripleDES.tripleDESCBCEncryptAny(payload, key)
     msg = pickle.dumps(msg)
     socket.sendall(msg)
 
 def encryptedReceive(socket, n, key):
     data = socket.recv(n)
     data = pickle.loads(data) 
-    return tripleDES.tripleDESCBCDecryptAny(data, key)
+    # unpack (data, hash)
+    # check hash
+    data, mac = tripleDES.tripleDESCBCDecryptAny(data, key)
+    # if hash is good
+    if vrfy(str(data), mac,  int(key.to01(), 2)):
+        return data
+    else:
+        assert(False)
 
 def receiveAsync(socket, n, key):
     while not kill:
@@ -105,4 +116,5 @@ if __name__ == '__main__':
     encryptedPass = tripleDES.tripleDESCBCEncrypt(password, DES_key)
     print("Sending username and password")
     send(s, (encryptedUser, encryptedPass))
+    
     threadingStuff(s, DES_key)
