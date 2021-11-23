@@ -31,9 +31,11 @@ def hmac_fn(msg, key):
     hmac = sha1.sha1(tmp1 + sha1.sha1( tmp2 + msg ) )
     return hmac
 
+def vrfy(msg, mac, key):
+    return hmac_fn(msg, key) == mac
 
 if __name__ == "__main__":
-    print(hmac_fn('1010001010101010', 123))
+    print(len(hmac_fn('10001010101010', 123)))
 
     print(hmac_fn('hello world', 123))
 

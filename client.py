@@ -10,8 +10,8 @@ import RSA
 import tripleDES
 import sys
 
-BANK = 'localhost'  # Standard loopback interface address (localhost)
-PORT = int(sys.argv[1])
+BANK = sys.argv[1]
+PORT = int(sys.argv[2])
 
 kill = False
 
@@ -28,9 +28,9 @@ def send(socket, data):
 
 def encryptedSend(socket, data, key):
     msg = tripleDES.tripleDESCBCEncryptAny(data, key)
+
     msg = pickle.dumps(msg)
     socket.sendall(msg)
-    
 
 def encryptedReceive(socket, n, key):
     data = socket.recv(n)
@@ -106,66 +106,3 @@ if __name__ == '__main__':
     print("Sending username and password")
     send(s, (encryptedUser, encryptedPass))
     threadingStuff(s, DES_key)
-
-"""
-
-receive_thread = threading.Thread(  target=receive, args=(s,1024) )
-send_thread = threading.Thread(  target=send, args=(s,) )
-
-receive_thread.start()
-send_thread.start()
-"""
-
-
-"""
-
-    data = ""
-    while len(data) == 0:
-        data = s.recv(1024)
-        print(data.decode())
-        #s.sendall(msg.encode())
-
-    msg = input()
-    secret_PORT = int(msg)
-    s.sendall( encrypt(msg).encode() )
-    time.sleep(2)
-    secret_sock.connect( (BANK, secret_PORT) )
-
-    data = ""
-    data1 = ""
-    while True:
-        data = s.recv(1024)
-        if len(data) > 0:
-            print(data.decode())
-            data = ""
-
-        data1 = secret_sock.recv(1024)
-        if len(data1) > 0:
-            print(data1.decode())
-            break
-    #print("here")
-    while True:
-        data = secret_sock.recv(1024).decode()
-        if (len(data) > 0):
-            print(data)
-            msg = input()
-            msg = msg.encode()
-            
-            secret_sock.sendall(msg)
-            data = ""
-
-    print("done")
-    def netcat(hostname, port, content):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((hostname, port))
-        s.sendall(content)
-        s.shutdown(socket.SHUT_WR)
-        while 1:
-            data = s.recv(1024)
-            if data == "":
-                break
-            print ("Received:", repr(data))
-        print ("Connection closed.")
-        s.close()
-
-"""
