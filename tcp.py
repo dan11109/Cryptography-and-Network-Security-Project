@@ -11,8 +11,8 @@ import bank
 kill = False
 #Use this to choose a new secret port
 
-HOST = 'localhost'  # Standard loopback interface address (localhost)
-PORT = int(sys.argv[1])
+HOST = sys.argv[1]  # Standard loopback interface address (localhost)
+PORT = int(sys.argv[2])
 secretPORT = None
 def decrypt(x):
     return x
