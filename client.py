@@ -1,4 +1,5 @@
 #Client Side
+
 import socket
 import time
 import logging
@@ -25,38 +26,47 @@ def send(socket, data):
     msg = pickle.dumps(data)
     socket.sendall(msg)
 
-def receiveAsync(socket, n):
+def encryptedSend(socket, data, key):
+    msg = tripleDES.tripleDESCBCEncryptAny(data, key)
+    msg = pickle.dumps(msg)
+    socket.sendall(msg)
+    
+
+def encryptedReceive(socket, n, key):
+    data = socket.recv(n)
+    data = pickle.loads(data) 
+    return tripleDES.tripleDESCBCDecryptAny(data, key)
+
+def receiveAsync(socket, n, key):
     while not kill:
-        data = receive(socket, n)
+        data = encryptedReceive(socket, n, key)
         print(data)
 
-
-
-def sendAsync(socket):
+def sendAsync(socket, key):
     while not kill:
+        time.sleep(0.1)
         print("Type W for withdraw, D for deposit, C for check balance")
         option = input()
         if option == "W":
             number = input("Enter an amount to withdraw")
             number = float(number)
             msg = ("W", number)
-            send(socket, msg)
+            encryptedSend(socket, msg, key)
         elif option == "D":
             number = input("Enter an amount to deposit")
             number = float(number)
             msg = ("D", number)
-            send(socket, msg)
+            encryptedSend(socket, msg, key)
         elif option == "C":
-            msg = ("W", None)
-            send(socket, msg)
+            msg = ("C", None)
+            encryptedSend(socket, msg, key)
         else:
             print("invalid choice!")
-        time.sleep(0.1)
 
 
-def threadingStuff(s):
-    receive_thread = threading.Thread(target=receiveAsync, args=(s, 1024) )
-    send_thread = threading.Thread(target=sendAsync, args=(s,) )
+def threadingStuff(s, DES_key):
+    receive_thread = threading.Thread(target=receiveAsync, args=(s, 1024, DES_key) )
+    send_thread = threading.Thread(target=sendAsync, args=(s, DES_key) )
     receive_thread.start()
     send_thread.start()
 
@@ -89,12 +99,13 @@ if __name__ == '__main__':
     prompt = receive(s, 1024)
     print(prompt)
     username = 'alpha'
-    password = 'GTvQq4nRTHzPGz'
+    password = 'FalseSharkTreaty'
     # send user/pass to server
     encryptedUser = tripleDES.tripleDESCBCEncrypt(username, DES_key)
     encryptedPass = tripleDES.tripleDESCBCEncrypt(password, DES_key)
+    print("Sending username and password")
     send(s, (encryptedUser, encryptedPass))
-    threadingStuff(s)
+    threadingStuff(s, DES_key)
 
 """
 

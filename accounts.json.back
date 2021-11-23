@@ -1,0 +1,12 @@
+{
+    "accounts": {
+        "alpha": {
+            "password":"be5729fcf0cfe0ccedb4ac4291086757d6871472",
+	    "balance":0.0
+        },
+        "beta": {
+            "password":"84f42482a8c3939ec4144ec804657b3ddd0c5d0c",
+	    "balance":0.0
+        }
+    }
+}

@@ -7,6 +7,7 @@ import tripleDES
 import DES
 import sys
 import RSA
+import bank
 kill = False
 #Use this to choose a new secret port
 
@@ -25,30 +26,46 @@ def send(socket, data):
     msg = pickle.dumps(data)
     socket.sendall(msg)
 
-def verify_password(user, pswrd):
-    return True
+def encryptedSend(socket, data, key):
+    msg = tripleDES.tripleDESCBCEncryptAny(data, key)
+    msg = pickle.dumps(msg)
+    socket.sendall(msg)
 
-def receiveAsync(socket, n):
+def encryptedReceive(socket, n, key):
+    data = socket.recv(n)
+    data = pickle.loads(data)
+    return tripleDES.tripleDESCBCDecryptAny(data, key)
+
+def receiveAsync(socket, n, username, bankfile, DES_key):
     while not kill:
-        option, data = receive(socket, n)
+        option, data = encryptedReceive(socket, 1024, DES_key)
         if option == "W":
             print("received withdraw command from client")
-            send(socket, "successful withdrawal\n")
+            success, balance = bank.withdraw(bankfile, username, data)
+            if success:
+                encryptedSend(socket, "Successful withdrawal\nCurrent balance: {}".format(balance), DES_key)
+            else:
+                encryptedSend(socket, "Failed withdrawal, insufficient funds!\nCurrent balance: {}".format(balance), DES_key)
         elif option == "D":
             print("received deposit command from client")
-            send(socket, "successful deposit\n")
+            success, balance = bank.deposit(bankfile, username, data)
+            if success:
+                encryptedSend(socket, "Successful withdrawal\nCurrent balance: {}".format(balance), DES_key)
+            else:
+                encryptedSend(socket, "Failed deposit, this is not possible!\nCurrent balance: {}".format(balance), DES_key)
         elif option == "C":
             print("received check command from client")
-            send(socket, "successful check\n")
+            success, balance = bank.checkBalance(bankfile, username)
+            encryptedSend(socket, "Current balance: {}".format(balance), DES_key)
         else:
             print("invalid choice!\n")
 
-
-def threadingStuff(s, n):
-    receive_thread = threading.Thread(target=receiveAsync, args=(s,n) )
+def threadingStuff(s, n, username, bankfile, key):
+    receive_thread = threading.Thread(target=receiveAsync, args=(s,n, username, bankfile, key) )
     receive_thread.start()
 
 if __name__ == '__main__':
+    bankfile = "accounts.json"
     #Generate DES Keys
     DES_key = tripleDES.genRandomKey(192)
     #Login
@@ -79,8 +96,11 @@ if __name__ == '__main__':
         encryptedUsername, encryptedPassword = receive(conn, 1024)
         decryptedUsername = tripleDES.tripleDESCBCDecrypt(encryptedUsername, DES_key)
         decryptedPassword = tripleDES.tripleDESCBCDecrypt(encryptedPassword, DES_key)
-        print("why doesn't this print")
-        print(decryptedUsername, decryptedPassword)
-        threadingStuff(conn, 1024)
+        if bank.verifyPassword(bankfile, decryptedUsername, decryptedPassword):
+            encryptedSend(conn, f"Hello {decryptedUsername}, you are logged in!", DES_key)
+        else:
+            encryptedSend(conn, "Incorrect password! Terminating connection!", DES_key)
+
+        threadingStuff(conn, 1024, decryptedUsername, bankfile, DES_key)
 
 

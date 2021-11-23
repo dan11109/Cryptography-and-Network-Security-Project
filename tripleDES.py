@@ -1,6 +1,8 @@
 from DES import DES
 from bitarray import bitarray
 import random
+import pickle
+from Crypto.Util.Padding import pad, unpad
 
 def genRandomKey(n, seed=None):
     if seed is not None:
@@ -136,6 +138,26 @@ def tripleDESCBCDecrypt(cipherText, key):
     # strip our whitespace padding
     return ret.rstrip()
 
+def tripleDESCBCEncryptAny(anyObject, key):
+    key = bitarray(key)
+    pickled = pickle.dumps(anyObject)
+    pickledPadded = pad(pickled, 8)
+    messageBits = bitarray()
+    messageBits.frombytes(pickledPadded)
+    res = _tripleDESCBCEncrypt(messageBits, key)
+    return res.to01()
+
+def tripleDESCBCDecryptAny(bitarrayString, key):
+    key = bitarray(key)
+    cipherText = bitarray(bitarrayString)
+    plaintext = _tripleDESCBCDecrypt(cipherText, key)
+    # convert to bytes from bitarray
+    plaintextBytes = plaintext.tobytes()
+    # unpad
+    pickled = unpad(plaintextBytes, 8)
+    # unpickle
+    return pickle.loads(pickled)
+
 
 def singleTripleDESExample():
     # example usage of single tripleDES
@@ -151,11 +173,7 @@ def singleTripleDESExample():
     plainText = tripleDES(key, cipherText, encrypt = False)
     print("Got:")
     print(plainText)
-
-if __name__ == '__main__':
-    # single triple DES example
-    # singleTripleDESExample()
-
+def tripleDESCBCTest():
     # example usage of CBC tripleDES (use this)
     print("CBC triple DES:")
     # generate a random key
@@ -169,3 +187,24 @@ if __name__ == '__main__':
     plainText = tripleDESCBCDecrypt(cipherText, key)
     print("Found plaintext:")
     print(plainText)
+
+def tripleDESCBCAnyTest():
+    # example usage of CBC tripleDES (use this)
+    print("CBC triple DES:")
+    # generate a random key
+    key = "".join(random.choices(["0", "1"], k=192))
+    toEncrypt = (1, 2, 3)
+    print("Encrypting:\n{}\nusing a random key:\n{}".format(toEncrypt, key))
+    cipherText = tripleDESCBCEncryptAny(toEncrypt, key)
+    print("Found ciphertext:")
+    print(cipherText)
+    print("Decrypting")
+    plainText = tripleDESCBCDecryptAny(cipherText, key)
+    print("Found plaintext:")
+    print(plainText)
+
+if __name__ == '__main__':
+    # single triple DES example
+    # singleTripleDESExample()
+    tripleDESCBCAnyTest()
+
