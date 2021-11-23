@@ -45,13 +45,13 @@ def modInverse(a, m): #more efficient version
     return x
 
 def encrypt(M,e,N):
-    if type(M) is bitarray:
-        M = ba2int(M)
+    if type(M) is str:
+        M = int(M, 2)
     return pow(M,e,N)
 
 def decrypt(C,d,N):
-    if type(C) is bitarray:
-        C = ba2int(M)
+    if type(C) is str:
+        C = int(C, 2)
     return pow(C,d,N)
 
 def RSA_params(n):

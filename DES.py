@@ -265,11 +265,6 @@ def DES(key, toEncrypt, encrypt):
     assert(len(temp) == 64)
     return temp
     
-def genRandomKey(n, seed=None):
-    if seed is not None:
-        random.seed(seed)
-    bits = ['0','1']
-    return bitarray( "".join([ random.choice(bits) for _ in range(n) ] ) )
 
 if __name__ == '__main__':
     # example usage

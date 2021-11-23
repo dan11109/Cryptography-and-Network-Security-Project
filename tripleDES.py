@@ -2,6 +2,12 @@ from DES import DES
 from bitarray import bitarray
 import random
 
+def genRandomKey(n, seed=None):
+    if seed is not None:
+        random.seed(seed)
+    bits = ['0','1']
+    return  "".join([ random.choice(bits) for _ in range(n) ] )
+
 def tripleDES(key, toEncrypt, encrypt):
     """
     key: a length 192 bitarray representing K1K2K3 for triple des

@@ -3,69 +3,98 @@ import socket
 import time
 import logging
 import threading
+import bitarray.util
 import pickle
 import RSA
-import DES
+import tripleDES
+import sys
 
 BANK = 'localhost'  # Standard loopback interface address (localhost)
-PORT = 4005        # Port to listen on (non-privileged ports are > 1023)
+PORT = int(sys.argv[1])
 
 kill = False
 
 def encrypt(P):
     return P
 
-def receive_thread(socket,n):
-    data = ""
-    while not kill:
-        data = socket.recv(n)
-        if len(data) > 0:
-            print(data.decode())
 def receive(socket, n):
     data = socket.recv(n)
-    print(data)
-    if len(data) == 0:
-        print("nothing to receive")
-        return
     return pickle.loads(data)
-    
 
-def send(socket):
+def send(socket, data):
+    msg = pickle.dumps(data)
+    socket.sendall(msg)
+
+def receiveAsync(socket, n):
     while not kill:
-        msg = input()
-        socket.sendall(msg.encode())
+        data = receive(socket, n)
+        print(data)
 
-def send_thread(socket):
+
+
+def sendAsync(socket):
     while not kill:
-        msg = input()
-        socket.sendall(msg.encode())
-        print(f"sending {msg}")
-        
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-secret_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print("Type W for withdraw, D for deposit, C for check balance")
+        option = input()
+        if option == "W":
+            number = input("Enter an amount to withdraw")
+            number = float(number)
+            msg = ("W", number)
+            send(socket, msg)
+        elif option == "D":
+            number = input("Enter an amount to deposit")
+            number = float(number)
+            msg = ("D", number)
+            send(socket, msg)
+        elif option == "C":
+            msg = ("W", None)
+            send(socket, msg)
+        else:
+            print("invalid choice!")
+        time.sleep(0.1)
 
-#generate RSA keys
-p,q,e,d = RSA.RSA_params(512)
-N = p*q
 
-#Connect To Bank Server
-s.connect( (BANK, PORT) )
+def threadingStuff(s):
+    receive_thread = threading.Thread(target=receiveAsync, args=(s, 1024) )
+    send_thread = threading.Thread(target=sendAsync, args=(s,) )
+    receive_thread.start()
+    send_thread.start()
 
-print( receive(s,1024) ) #welcome Message
+if __name__ == '__main__':
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    secret_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-#send RSA Keys
-print("Sending RSA Public Keys [e,N].")
-msg = pickle.dumps((e, N))
-s.sendall(msg)
-print("here1234")
-#Receive DES Key from Bank
-DES_key_encrypted = receive(s, 1024)
-DES_key = RSA.decrypt(DES_key_encrypted, d, N)
-print(f"DES key is \n{DES_key}")
+    #generate RSA keys
+    p,q,e,d = RSA.RSA_params(512)
+    N = p*q
 
-username = 'alpha'
-password = 'GTvQq4nRTHzPGz'
-
+    #Connect To Bank Server
+    s.connect( (BANK, PORT) )
+    # client receives welcome message
+    welcome = receive(s,1024)
+    print(welcome) #welcome Message
+    #send RSA Keys
+    print("Sending RSA Public Keys [e,N].")
+    send(s, (e, N))
+    #Receive DES Key from Bank
+    DES_key_encrypted = receive(s, 1024)
+    # DES 
+    DES_key = RSA.decrypt(DES_key_encrypted, d, N)
+    DES_key = bitarray.util.int2ba(DES_key, length=192)
+    print(len(DES_key))
+    assert(len(DES_key) == 192)
+    print(f"DES key is \n{DES_key}")
+    # at this point the client and server have the DES key
+    # get username/password prompt from server
+    prompt = receive(s, 1024)
+    print(prompt)
+    username = 'alpha'
+    password = 'GTvQq4nRTHzPGz'
+    # send user/pass to server
+    encryptedUser = tripleDES.tripleDESCBCEncrypt(username, DES_key)
+    encryptedPass = tripleDES.tripleDESCBCEncrypt(password, DES_key)
+    send(s, (encryptedUser, encryptedPass))
+    threadingStuff(s)
 
 """
 

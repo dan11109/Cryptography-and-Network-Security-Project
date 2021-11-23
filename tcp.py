@@ -1,15 +1,17 @@
 #Bank Side
 import pickle
+import threading
 import socket
 import time
 import tripleDES
 import DES
+import sys
 import RSA
-
+kill = False
 #Use this to choose a new secret port
 
 HOST = 'localhost'  # Standard loopback interface address (localhost)
-PORT = 4005   # Port to listen on (non-privileged ports are > 1023)
+PORT = int(sys.argv[1])
 secretPORT = None
 def decrypt(x):
     return x
@@ -26,79 +28,59 @@ def send(socket, data):
 def verify_password(user, pswrd):
     return True
 
-#Generate DES Keys
-DES_key = DES.genRandomKey(192)
-
-#Login
-print(f"Opening Bank on {HOST} at port {PORT}.")
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, PORT))
-
-    #wait for client to connect
-    s.listen()
-    conn, addr = s.accept()
-    print('Connected by', addr)
-    time.sleep(2)
-
-    conn.sendall("Welcome To HHS Bank.\n Please send Public RSA Keys >>> ".encode())
-
-    # RSA Key Exchange
-    RSA_keys = receive(conn, 1024)
-    e,N = RSA_keys
-    print(f"Recieved Public RSA Keys: {e}, {N}")
-
-    #send encrypted DES keys to client
-    print("Sending encrypted DES key")
-    DES_key_encrypted = RSA.encrypt(DES_key, e, N)
-    send(conn, DES_key_encrypted)
-    #conn.sendall((DES_key_encrypted) )
-
-    send(conn, "Please enter password >>>")
-    password = receive(conn, 1024)
-
-    print(username, password)
-
-    if verify_login(username, password):
-        pass
-    with conn:
-        
-        conn.sendall("request new port.".encode())
-        while True:
-            data = conn.recv(1024)
-            if not data:
-                break
-            secretPORT = int(decrypt(data.decode()))
-            print(f"migrating to port: {secretPORT}")
-            break
-        conn.sendall("migrating to new port ".encode()+ data)
+def receiveAsync(socket, n):
+    while not kill:
+        option, data = receive(socket, n)
+        if option == "W":
+            print("received withdraw command from client")
+            send(socket, "successful withdrawal\n")
+        elif option == "D":
+            print("received deposit command from client")
+            send(socket, "successful deposit\n")
+        elif option == "C":
+            print("received check command from client")
+            send(socket, "successful check\n")
+        else:
+            print("invalid choice!\n")
 
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, secretPORT))
-    print(f"Binding to {HOST} on port {secretPORT}.")
-    s.listen()
-    conn, addr = s.accept()
-    with conn:
+def threadingStuff(s, n):
+    receive_thread = threading.Thread(target=receiveAsync, args=(s,n) )
+    receive_thread.start()
+
+if __name__ == '__main__':
+    #Generate DES Keys
+    DES_key = tripleDES.genRandomKey(192)
+    #Login
+    print(f"Opening Bank on {HOST} at port {PORT}.")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((HOST, PORT))
+
+        #wait for client to connect
+        s.listen()
+        conn, addr = s.accept()
         print('Connected by', addr)
-        conn.sendall("welcome to the secret port.".encode())
-        conn.sendall("Enter Username".encode())
-        username = ""
-        while len(username) == 0:
-            username = conn.recv(1024).decode()
-        print(username)
-        password = ""
-        conn.sendall("Enter Password".encode())
-        while len(password) == 0:
-            password = conn.recv(1024).decode()
-        print(password)
-        print(".")
-        while True:
-            data = conn.recv(1024)
-            if not data:
-                break
-            conn.sendall("recieved: ".encode()+ data)
-            print(f"recieved: {data.decode()} from {addr}")
+        welcome = "Welcome To HHS Bank.\n Please send Public RSA Keys >>> "
+        time.sleep(1)
+        send(conn, welcome)
 
+        # RSA Key Exchange
+        RSA_keys = receive(conn, 1024)
+        e,N = RSA_keys
+        print(f"Recieved Public RSA Keys: {e}, {N}")
 
-#Use this to choose a new secret port
+        #send encrypted DES keys to client
+        print("Sending encrypted DES key")
+        DES_key_encrypted = RSA.encrypt(DES_key, e, N)
+        send(conn, DES_key_encrypted)
+        #conn.sendall((DES_key_encrypted) )
+        time.sleep(1)
+        send(conn, "Please enter username and password >>>")
+        encryptedUsername, encryptedPassword = receive(conn, 1024)
+        decryptedUsername = tripleDES.tripleDESCBCDecrypt(encryptedUsername, DES_key)
+        decryptedPassword = tripleDES.tripleDESCBCDecrypt(encryptedPassword, DES_key)
+        print("why doesn't this print")
+        print(decryptedUsername, decryptedPassword)
+        threadingStuff(conn, 1024)
+
 
