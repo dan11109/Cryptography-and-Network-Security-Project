@@ -12,7 +12,7 @@ import sys
 from MAC import *
 BANK = sys.argv[1]
 PORT = int(sys.argv[2])
-
+BUFFSIZE = 2048
 kill = False
 
 def encrypt(P):
@@ -76,7 +76,7 @@ def sendAsync(socket, key):
 
 
 def threadingStuff(s, DES_key):
-    receive_thread = threading.Thread(target=receiveAsync, args=(s, 1024, DES_key) )
+    receive_thread = threading.Thread(target=receiveAsync, args=(s, BUFFSIZE, DES_key) )
     send_thread = threading.Thread(target=sendAsync, args=(s, DES_key) )
     receive_thread.start()
     send_thread.start()
@@ -92,13 +92,13 @@ if __name__ == '__main__':
     #Connect To Bank Server
     s.connect( (BANK, PORT) )
     # client receives welcome message
-    welcome = receive(s,1024)
+    welcome = receive(s,BUFFSIZE)
     print(welcome) #welcome Message
     #send RSA Keys
     print("Sending RSA Public Keys [e,N].")
     send(s, (e, N))
     #Receive DES Key from Bank
-    DES_key_encrypted = receive(s, 1024)
+    DES_key_encrypted = receive(s, BUFFSIZE)
     # DES 
     DES_key = RSA.decrypt(DES_key_encrypted, d, N)
     DES_key = bitarray.util.int2ba(DES_key, length=192)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     print(f"DES key is \n{DES_key}")
     # at this point the client and server have the DES key
     # get username/password prompt from server
-    prompt = receive(s, 1024)
+    prompt = receive(s, BUFFSIZE)
     print(prompt)
     username = 'alpha'
     password = 'FalseSharkTreaty'

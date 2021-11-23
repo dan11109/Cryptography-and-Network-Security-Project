@@ -14,6 +14,7 @@ from MAC import *
 kill = False
 #Use this to choose a new secret port
 
+BUFFSIZE = 2048
 HOST = sys.argv[1]  # Standard loopback interface address (localhost)
 PORT = int(sys.argv[2])
 secretPORT = None
@@ -34,7 +35,6 @@ def encryptedSend(socket, data, key):
     mac = hmac_fn(str(data), int(key, 2))
     payload = (data, mac)
     msg = tripleDES.tripleDESCBCEncryptAny(payload, key)
-
     msg = pickle.dumps(msg)
     socket.sendall(msg)
 
@@ -42,7 +42,6 @@ def encryptedReceive(socket, n, key):
     data = socket.recv(n)
     data = pickle.loads(data) 
     data, mac = tripleDES.tripleDESCBCDecryptAny(data, key)
-
     if vrfy(str(data), mac, int(key, 2)):
         return data
     else:
@@ -50,7 +49,7 @@ def encryptedReceive(socket, n, key):
 
 def receiveAsync(socket, n, username, bankfile, DES_key):
     while not kill:
-        option, data = encryptedReceive(socket, 1024, DES_key)
+        option, data = encryptedReceive(socket, BUFFSIZE, DES_key)
         if option == "W":
             print("received withdraw command from client")
             success, balance = bank.withdraw(bankfile, username, data)
@@ -63,8 +62,10 @@ def receiveAsync(socket, n, username, bankfile, DES_key):
             success, balance = bank.deposit(bankfile, username, data)
             if success:
                 encryptedSend(socket, "Successful withdrawal\nCurrent balance: {}".format(balance), DES_key)
+                print("sent success")
             else:
                 encryptedSend(socket, "Failed deposit, this is not possible!\nCurrent balance: {}".format(balance), DES_key)
+                print("sent failure")
         elif option == "C":
             print("received check command from client")
             success, balance = bank.checkBalance(bankfile, username)
@@ -94,7 +95,7 @@ if __name__ == '__main__':
         send(conn, welcome)
 
         # RSA Key Exchange
-        RSA_keys = receive(conn, 1024)
+        RSA_keys = receive(conn, BUFFSIZE)
         e,N = RSA_keys
         print(f"Recieved Public RSA Keys: {e}, {N}")
 
@@ -105,7 +106,7 @@ if __name__ == '__main__':
         #conn.sendall((DES_key_encrypted) )
         time.sleep(1)
         send(conn, "Please enter username and password >>>")
-        encryptedUsername, encryptedPassword = receive(conn, 1024)
+        encryptedUsername, encryptedPassword = receive(conn, BUFFSIZE)
         decryptedUsername = tripleDES.tripleDESCBCDecrypt(encryptedUsername, DES_key)
         decryptedPassword = tripleDES.tripleDESCBCDecrypt(encryptedPassword, DES_key)
         if bank.verifyPassword(bankfile, decryptedUsername, decryptedPassword):
@@ -113,6 +114,6 @@ if __name__ == '__main__':
         else:
             encryptedSend(conn, "Incorrect password! Terminating connection!", DES_key)
 
-        threadingStuff(conn, 1024, decryptedUsername, bankfile, DES_key)
+        threadingStuff(conn, BUFFSIZE, decryptedUsername, bankfile, DES_key)
 
 
