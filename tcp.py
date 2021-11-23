@@ -2,6 +2,8 @@
 
 import socket
 import time
+import DES
+import RSA
 
 #Use this to choose a new secret port
 
@@ -22,6 +24,9 @@ def receive(socket,n):
 def verify_password(user, pswrd):
     return True
 
+#Generate DES Keys
+DES_keys = DES.keyGen
+
 #Login
 print(f"Opening Bank on {HOST} at port {PORT}.")
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -33,10 +38,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print('Connected by', addr)
     time.sleep(2)
 
-    conn.sendall("Welcome To HHS Bank.\n Please enter your username >>> ".encode())
+    conn.sendall("Welcome To HHS Bank.\n Please send Public RSA Keys >>> ".encode())
 
-    username = receive(conn, 1024)
+    # RSA Key Exchange
+    RSA_keys = receive(conn, 1024).split(',')
+    e,N = int(RSA_keys[0]), int(RSA_keys[1])
+
+    print(f"Recieved Public RSA Keys: {e}, {N}")
+
     print(username)
+
     conn.sendall("Please enter password >>>".encode())
     password = receive(conn, 1024)
 
