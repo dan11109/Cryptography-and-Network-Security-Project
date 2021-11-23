@@ -10,7 +10,8 @@ RSA parameter generation
 
 from Crypto.Util import number #NOTE: only used to generate large prime numbers 
 import random
- 
+from bitarray import bitarray
+from bitarray.util import ba2int
 
 
 def modInverse(a, m): #more efficient version 
@@ -43,6 +44,15 @@ def modInverse(a, m): #more efficient version
  
     return x
 
+def encrypt(M,e,N):
+    if type(M) is bitarray:
+        M = ba2int(M)
+    return pow(M,e,N)
+
+def decrypt(C,d,N):
+    if type(C) is bitarray:
+        C = ba2int(M)
+    return pow(C,d,N)
 
 def RSA_params(n):
 

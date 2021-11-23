@@ -3,7 +3,9 @@ import socket
 import time
 import logging
 import threading
-
+import pickle
+import RSA
+import DES
 
 BANK = 'localhost'  # Standard loopback interface address (localhost)
 PORT = 4005        # Port to listen on (non-privileged ports are > 1023)
@@ -13,32 +15,66 @@ kill = False
 def encrypt(P):
     return P
 
-def receive(socket,n):
+def receive_thread(socket,n):
     data = ""
     while not kill:
         data = socket.recv(n)
         if len(data) > 0:
             print(data.decode())
+def receive(socket, n):
+    data = socket.recv(n)
+    print(data)
+    if len(data) == 0:
+        print("nothing to receive")
+        return
+    return pickle.loads(data)
     
 
 def send(socket):
     while not kill:
         msg = input()
         socket.sendall(msg.encode())
+
+def send_thread(socket):
+    while not kill:
+        msg = input()
+        socket.sendall(msg.encode())
         print(f"sending {msg}")
-        if msg == "
         
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 secret_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+#generate RSA keys
+p,q,e,d = RSA.RSA_params(512)
+N = p*q
+
+#Connect To Bank Server
 s.connect( (BANK, PORT) )
+
+print( receive(s,1024) ) #welcome Message
+
+#send RSA Keys
+print("Sending RSA Public Keys [e,N].")
+msg = pickle.dumps((e, N))
+s.sendall(msg)
+print("here1234")
+#Receive DES Key from Bank
+DES_key_encrypted = receive(s, 1024)
+DES_key = RSA.decrypt(DES_key_encrypted, d, N)
+print(f"DES key is \n{DES_key}")
+
+username = 'alpha'
+password = 'GTvQq4nRTHzPGz'
+
+
+"""
 
 receive_thread = threading.Thread(  target=receive, args=(s,1024) )
 send_thread = threading.Thread(  target=send, args=(s,) )
 
 receive_thread.start()
 send_thread.start()
-
+"""
 
 
 """

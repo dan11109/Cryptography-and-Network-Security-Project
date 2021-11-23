@@ -1,7 +1,8 @@
 #Bank Side
-
+import pickle
 import socket
 import time
+import tripleDES
 import DES
 import RSA
 
@@ -15,17 +16,18 @@ def decrypt(x):
 
 #blocks a recieve call waiting for data from socket
 def receive(socket,n):
-    data = ""
-    while len(data) == 0:
-        data = socket.recv(n)
+    data = socket.recv(n)
+    return pickle.loads(data)
 
-    return data.decode()
+def send(socket, data):
+    msg = pickle.dumps(data)
+    socket.sendall(msg)
 
 def verify_password(user, pswrd):
     return True
 
 #Generate DES Keys
-DES_keys = DES.keyGen
+DES_key = DES.genRandomKey(192)
 
 #Login
 print(f"Opening Bank on {HOST} at port {PORT}.")
@@ -41,14 +43,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     conn.sendall("Welcome To HHS Bank.\n Please send Public RSA Keys >>> ".encode())
 
     # RSA Key Exchange
-    RSA_keys = receive(conn, 1024).split(',')
-    e,N = int(RSA_keys[0]), int(RSA_keys[1])
-
+    RSA_keys = receive(conn, 1024)
+    e,N = RSA_keys
     print(f"Recieved Public RSA Keys: {e}, {N}")
 
-    print(username)
+    #send encrypted DES keys to client
+    print("Sending encrypted DES key")
+    DES_key_encrypted = RSA.encrypt(DES_key, e, N)
+    send(conn, DES_key_encrypted)
+    #conn.sendall((DES_key_encrypted) )
 
-    conn.sendall("Please enter password >>>".encode())
+    send(conn, "Please enter password >>>")
     password = receive(conn, 1024)
 
     print(username, password)

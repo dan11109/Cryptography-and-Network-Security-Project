@@ -1,6 +1,6 @@
 from bitarray import bitarray
 from bitarray import util as bautil
-
+import random
 def inversePermutationArr(p):
     # takes in some permutation array eg P10 and returns the permutation array that would undo P10
     pInverse = [0]*len(p)
@@ -265,6 +265,12 @@ def DES(key, toEncrypt, encrypt):
     assert(len(temp) == 64)
     return temp
     
+def genRandomKey(n, seed=None):
+    if seed is not None:
+        random.seed(seed)
+    bits = ['0','1']
+    return bitarray( "".join([ random.choice(bits) for _ in range(n) ] ) )
+
 if __name__ == '__main__':
     # example usage
     key = bitarray("0"*64)
