@@ -18,7 +18,10 @@ Overview:
     All future communication uses DES.
 5. Client sends username and passwords to the Bank.
 6. Bank verifies username and passwords.
+
+
     a) If login credentials are valid, proceed to ATM mode.
+
     b) If invalid, terminate connection and exit.
 
 
