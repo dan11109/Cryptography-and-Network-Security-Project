@@ -17,6 +17,7 @@ kill = False
 BUFFSIZE = 2048
 HOST = sys.argv[1]  # Standard loopback interface address (localhost)
 PORT = int(sys.argv[2])
+SECRET_PORT = int(sys.argv[3])
 secretPORT = None
 def decrypt(x):
     return x
@@ -96,6 +97,23 @@ if __name__ == '__main__':
         RSA_keys = receive(conn, BUFFSIZE)
         e,N = RSA_keys
         print(f"Recieved Public RSA Keys: {e}, {N}")
+
+        SECRET_PORT_encrypted = RSA.encrypt(SECRET_PORT, e, N)
+
+        #Send Secret Port to client
+        print(f"Sending Secret Port {SECRET_PORT} to client.")
+        send(conn, SECRET_PORT_encrypted)
+
+        secret_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        secret_socket.bind( (HOST, SECRET_PORT) )
+        print(f"Opening Secret Bank on {HOST} at port {SECRET_PORT}.")
+        
+        #wait for client to connect to secret port
+        secret_socket.listen()
+        conn, addr = secret_socket.accept()
+        print('Connected by', addr)
+
+        send(conn, "Welcome to the secret port.")
 
         #send encrypted DES keys to client
         print("Sending encrypted DES key")

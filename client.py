@@ -7,9 +7,12 @@ import threading
 import bitarray.util
 import pickle
 import RSA
+
+
 import tripleDES
 import sys
 from MAC import *
+
 BANK = sys.argv[1]
 PORT = int(sys.argv[2])
 BUFFSIZE = 2048
@@ -83,7 +86,7 @@ def threadingStuff(s, DES_key):
 
 if __name__ == '__main__':
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    secret_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sec = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     #generate RSA keys
     p,q,e,d = RSA.RSA_params(512)
@@ -97,15 +100,26 @@ if __name__ == '__main__':
     #send RSA Keys
     print("Sending RSA Public Keys [e,N].")
     send(s, (e, N))
+
+    SECRET_PORT_encrypted = receive(s, BUFFSIZE)
+
+    SECRET_PORT = RSA.decrypt( SECRET_PORT_encrypted, d, N)
+
+    sec.connect( (BANK, SECRET_PORT) )
+
+    secret_port_welcome = receive(sec, BUFFSIZE)
+
+    print(secret_port_welcome)
+
     #Receive DES Key from Bank
-    DES_key_encrypted = receive(s, BUFFSIZE)
+    DES_key_encrypted = receive(sec, BUFFSIZE)
     # DES 
     DES_key = RSA.decrypt(DES_key_encrypted, d, N)
     DES_key = bitarray.util.int2ba(DES_key, length=192)
     print(f"DES key is \n{DES_key.to01()}")
     # at this point the client and server have the DES key
     # get username/password prompt from server
-    prompt = receive(s, BUFFSIZE)
+    prompt = receive(sec, BUFFSIZE)
     print(prompt)
 
     username = input("Enter your username: ")
@@ -117,6 +131,6 @@ if __name__ == '__main__':
     encryptedUser = tripleDES.tripleDESCBCEncrypt(username, DES_key)
     encryptedPass = tripleDES.tripleDESCBCEncrypt(password, DES_key)
     print("Sending username and password")
-    send(s, (encryptedUser, encryptedPass))
+    send(sec, (encryptedUser, encryptedPass))
     
-    threadingStuff(s, DES_key)
+    threadingStuff(sec, DES_key)
