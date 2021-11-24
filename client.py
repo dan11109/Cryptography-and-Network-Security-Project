@@ -102,9 +102,7 @@ if __name__ == '__main__':
     # DES 
     DES_key = RSA.decrypt(DES_key_encrypted, d, N)
     DES_key = bitarray.util.int2ba(DES_key, length=192)
-    print(len(DES_key))
-    assert(len(DES_key) == 192)
-    print(f"DES key is \n{DES_key}")
+    print(f"DES key is \n{DES_key.to01()}")
     # at this point the client and server have the DES key
     # get username/password prompt from server
     prompt = receive(s, BUFFSIZE)
