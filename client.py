@@ -107,8 +107,12 @@ if __name__ == '__main__':
     # get username/password prompt from server
     prompt = receive(s, BUFFSIZE)
     print(prompt)
-    username = 'alpha'
-    password = 'FalseSharkTreaty'
+
+    username = input("Enter your username: ")
+    print(username)
+    password = input("Enter your password: ")
+    print(password)
+    
     # send user/pass to server
     encryptedUser = tripleDES.tripleDESCBCEncrypt(username, DES_key)
     encryptedPass = tripleDES.tripleDESCBCEncrypt(password, DES_key)
