@@ -10,25 +10,22 @@ Group Members:
 
 Overview: 
 
--1. Bank Establishes Communication Channel
+1. Bank establishes server
+2. Client connects to server
+3. Client sends public RSA keys [e,N]
+4. Bank encrypts DES key using RSA and sends to Client
 
-0. Client connects to channel.
+    a) Client decrypts DES key using private RSA keys.
 
-1. Client: generate p,q,e,d using RSA and send {e,N} to Bank. 
+    b) All future communication uses DES.
+5. Client sends username and passwords to the Bank.
+6. Bank verifies username and passwords.
 
-2. Bank: Receive {e,N}, send {CDES,Chmac} where CDES = KDES^e mod N and CHMAC = KHMAC^e mod N
 
-3. Client: Receive {CDES,CHMAC} and decrypt them where KDES = CDES^d mod N and KHMAC = CHMAC^d mod N. Now both the bank and cleint have DES and HMAC keys. 
+    a) If login credentials are valid, proceed to ATM mode.
 
-4. Client: sends bank DES\[username, password + HMAC(username, password)] using DES to encrypt the message 
+    b) If invalid, terminate connection and exit.
 
-5. Bank: decrypts this message and validates that this user has an account and the password is correct. (the usernames and passwords are set before hand)
-
-6. Bank: send DES\[ok / invalid credentials  + HMAC(ok / invalid credentials  )] to client
-
-7. Client: if received ok send bank transaction, if invalid credentials quit connection and start back at step 1 again. 
-
-8. Bank: send confirmation of transaction when received from client
 
 
 
