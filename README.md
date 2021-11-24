@@ -14,8 +14,10 @@ Overview:
 2. Client connects to server
 3. Client sends public RSA keys [e,N]
 4. Bank encrypts DES key using RSA and sends to Client
-    Client decrypts DES key using private RSA keys.
-    All future communication uses DES.
+
+    a) Client decrypts DES key using private RSA keys.
+
+    b) All future communication uses DES.
 5. Client sends username and passwords to the Bank.
 6. Bank verifies username and passwords.
 
