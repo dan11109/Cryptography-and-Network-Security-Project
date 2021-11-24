@@ -54,20 +54,20 @@ def receiveAsync(socket, n, username, bankfile, DES_key):
             print("received withdraw command from client")
             success, balance = bank.withdraw(bankfile, username, data)
             if success:
-                encryptedSend(socket, "Successful withdrawal\nCurrent balance: {}".format(balance), DES_key)
+                encryptedSend(socket, "Successful withdrawal\nCurrent balance: ${:.2f}".format(balance), DES_key)
             else:
-                encryptedSend(socket, "Failed withdrawal, insufficient funds!\nCurrent balance: {}".format(balance), DES_key)
+                encryptedSend(socket, "Failed withdrawal, insufficient funds!\nCurrent balance: ${:.2f}".format(balance), DES_key)
         elif option == "D":
             print("received deposit command from client")
             success, balance = bank.deposit(bankfile, username, data)
             if success:
-                encryptedSend(socket, "Successful withdrawal\nCurrent balance: {}".format(balance), DES_key)
+                encryptedSend(socket, "Successful withdrawal\nCurrent balance: ${:.2f}".format(balance), DES_key)
             else:
-                encryptedSend(socket, "Failed deposit, this is not possible!\nCurrent balance: {}".format(balance), DES_key)
+                encryptedSend(socket, "Failed deposit, this is not possible!\nCurrent balance: ${:.2f}".format(balance), DES_key)
         elif option == "C":
             print("received check command from client")
             success, balance = bank.checkBalance(bankfile, username)
-            encryptedSend(socket, "Current balance: {}".format(balance), DES_key)
+            encryptedSend(socket, "Current balance: ${:.2f}".format(balance), DES_key)
         else:
             print("invalid choice!\n")
 
@@ -108,9 +108,11 @@ if __name__ == '__main__':
         decryptedUsername = tripleDES.tripleDESCBCDecrypt(encryptedUsername, DES_key)
         decryptedPassword = tripleDES.tripleDESCBCDecrypt(encryptedPassword, DES_key)
         if bank.verifyPassword(bankfile, decryptedUsername, decryptedPassword):
+            print(f"{decryptedUsername} has logged in.")
             encryptedSend(conn, f"Hello {decryptedUsername}, you are logged in!", DES_key)
         else:
             encryptedSend(conn, "Incorrect password! Terminating connection!", DES_key)
+            print(f"Invalid login with username {decryptedUsername}.")
             exit(0)
 
         threadingStuff(conn, BUFFSIZE, decryptedUsername, bankfile, DES_key)

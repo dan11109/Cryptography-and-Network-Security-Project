@@ -55,16 +55,16 @@ def receiveAsync(socket, n, key):
 
 def sendAsync(socket, key):
     while not kill:
-        time.sleep(0.1)
+        time.sleep(1)
         print("Type W for withdraw, D for deposit, C for check balance")
         option = input()
         if option == "W":
-            number = input("Enter an amount to withdraw")
+            number = input("Enter an amount to withdraw >>> $")
             number = float(number)
             msg = ("W", number)
             encryptedSend(socket, msg, key)
         elif option == "D":
-            number = input("Enter an amount to deposit")
+            number = input("Enter an amount to deposit >>> $")
             number = float(number)
             msg = ("D", number)
             encryptedSend(socket, msg, key)

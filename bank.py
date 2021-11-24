@@ -17,7 +17,7 @@ def withdraw(filename, username, amount):
     if currbal - amount < 0:
         return (False, currbal)
     db["accounts"][username]["balance"] -= amount
-    print(db)
+
     writeDB(db, filename)
     print("WITHDREW")
     return (True, db["accounts"][username]["balance"])
