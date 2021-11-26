@@ -62,7 +62,7 @@ def receiveAsync(socket, n, username, bankfile, DES_key):
             print("received deposit command from client")
             success, balance = bank.deposit(bankfile, username, data)
             if success:
-                encryptedSend(socket, "Successful withdrawal\nCurrent balance: ${:.2f}".format(balance), DES_key)
+                encryptedSend(socket, "Successful deposit\nCurrent balance: ${:.2f}".format(balance), DES_key)
             else:
                 encryptedSend(socket, "Failed deposit, this is not possible!\nCurrent balance: ${:.2f}".format(balance), DES_key)
         elif option == "C":

@@ -65,12 +65,18 @@ def sendAsync(socket, key):
             number = input("Enter an amount to withdraw >>> $")
             number = float(number)
             msg = ("W", number)
-            encryptedSend(socket, msg, key)
+            if number < 0:
+                print("Amount must be positive.")
+            else:
+                encryptedSend(socket, msg, key)
         elif option == "D":
             number = input("Enter an amount to deposit >>> $")
             number = float(number)
             msg = ("D", number)
-            encryptedSend(socket, msg, key)
+            if number < 0:
+                print("Amount must be positive.")
+            else:
+                encryptedSend(socket, msg, key)
         elif option == "C":
             msg = ("C", None)
             encryptedSend(socket, msg, key)
